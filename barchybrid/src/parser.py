@@ -50,8 +50,10 @@ def run(om,options,i):
             parser.Train(traindata)
             print 'Finished epoch ' + str(epoch)
 
-            model_file = os.path.join(outdir, options.model + str(epoch))
-            parser.Save(model_file)
+            if not options.overwrite_model:
+                print "Overwriting model due to higher dev score"
+                model_file = os.path.join(outdir, options.model + str(epoch))
+                parser.Save(model_file)
 
             if options.pred_dev: # use the model to predict on dev data
 
@@ -83,6 +85,10 @@ def run(om,options,i):
                             if options.model_selection:
                                 if score > cur_treebank.dev_best[1]:
                                     cur_treebank.dev_best = [epoch,score]
+                                if options.overwrite_model:
+                                    print "Overwriting model due to higher dev score"
+                                    model_file = os.path.join(cur_treebank.outdir, options.model)
+                                    parser.Save(model_file)    
 
             if options.deadline:
                 # keep track of duration of training+eval
@@ -111,10 +117,15 @@ def run(om,options,i):
                     if cur_treebank.model_selection:
                         print "Best dev score of " + str(cur_treebank.dev_best[1]) + " found at epoch " + str(cur_treebank.dev_best[0])
 
-                bestmodel_file = os.path.join(outdir,"barchybrid.model" + str(best_epoch))
-                model_file = os.path.join(outdir,"barchybrid.model")
-                print "Copying " + bestmodel_file + " to " + model_file
-                copyfile(bestmodel_file,model_file)
+                if not options.overwrite_model:
+                    bestmodel_file = os.path.join(outdir,"barchybrid.model" + str(best_epoch))
+                    model_file = os.path.join(outdir,"barchybrid.model")
+                    print "Copying " + bestmodel_file + " to " + model_file
+                    copyfile(bestmodel_file,model_file)
+
+            if exceeds_deadline and epoch < options.epochs:
+                print 'Leaving epoch loop early to avoid exceeding deadline'
+                break
 
             if exceeds_deadline and epoch < options.epochs:
                 print 'Leaving epoch loop early to avoid exceeding deadline'
@@ -216,6 +227,8 @@ task mode) rather than scanning datadir.')
         help='Disable evaluation of prediction on dev data')
     group.add_option("--disable-model-selection", action="store_false",
         help="Disable choosing of model from best/last epoch", dest="model_selection", default=True)
+    group.add_option("--overwrite-model", action="store_true", 
+        help="Overwrite model if the dev score is higher than previous best dev score", dest="overwrite_model", default=False)
     group.add_option("--use-default-seed", action="store_true",
         help="Use default random seed for Python", default=False)
     #TODO: reenable this

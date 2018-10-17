@@ -108,13 +108,9 @@ class FeatureExtractor(object):
 
 
     def get_external_embeddings(self,external_embedding_file):
-        external_embedding_fp = codecs.open(external_embedding_file,'r',encoding='utf-8')
+        external_embedding_fp = open(external_embedding_file, 'r') # removed utf-8
         external_embedding_fp.readline()
-        self.external_embedding = {}
-        for line in external_embedding_fp:
-            line = line.strip().split()
-            self.external_embedding[line[0]] = [float(f) for f in line[1:]]
-
+        self.external_embedding = {line.split(' ')[0] : [float(f) for f in line.strip().split(' ')[1:]] for line in external_embedding_fp}
         external_embedding_fp.close()
 
         self.edim = len(self.external_embedding.values()[0])
@@ -123,7 +119,7 @@ class FeatureExtractor(object):
         self.elookup = self.model.add_lookup_parameters((len(self.external_embedding) + 3, self.edim))
         for word, i in self.extrnd.iteritems():
             self.elookup.init_row(i, self.external_embedding[word])
-            self.extrnd['*PAD*'] = 1
-            self.extrnd['*INITIAL*'] = 2
+        self.extrnd['*PAD*'] = 1
+        self.extrnd['*INITIAL*'] = 2
 
         print 'Load external embedding. Vector dimensions', self.edim
