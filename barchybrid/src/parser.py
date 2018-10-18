@@ -51,7 +51,6 @@ def run(om,options,i):
             print 'Finished epoch ' + str(epoch)
 
             if not options.overwrite_model:
-                print "Overwriting model due to higher dev score"
                 model_file = os.path.join(outdir, options.model + str(epoch))
                 parser.Save(model_file)
 
